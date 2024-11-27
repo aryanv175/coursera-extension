@@ -1,5 +1,29 @@
 const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
 
+// Store conversation history
+let conversationHistory = [];
+
+// Initialize conversation with system message
+function initializeConversation(courseContext) {
+    conversationHistory = [{
+        role: "user",
+        parts: [{
+            text: `You are a helpful teaching assistant for a Coursera course.
+                  Here is the course context:
+                  Course Title: ${courseContext.title}
+                  Course Description: ${courseContext.description}
+                  
+                  Please keep your responses concise and focused on helping students understand the course material.
+                  Acknowledge that you understand this context.`
+        }]
+    }, {
+        role: "model",
+        parts: [{
+            text: "I understand. I'm your Coursera Assistant for this course. I'll help you understand the course material with concise, focused responses. What would you like to know about the course?"
+        }]
+    }];
+}
+
 // Function to scrape course data
 function scrapeCourseData() {
     const courseData = {
@@ -20,8 +44,8 @@ function createChatButton() {
     const chatButton = document.createElement('div');
     chatButton.className = 'course-assistant-chat-button';
     chatButton.innerHTML = `
-        <svg viewBox="0 0 24 24" width="24" height="24">
-            <path fill="currentColor" d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4A2,2 0 0,0 20,2M20,16H6L4,18V4H20"/>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2ZM20 16H6L4 18V4H20V16Z" fill="currentColor"/>
         </svg>
     `;
     document.body.appendChild(chatButton);
@@ -56,24 +80,22 @@ function createChatPopup() {
     return popup;
 }
 
-// Function to call Gemini API
+// Function to call Gemini API with conversation history
 async function generateResponse(prompt, courseContext) {
     try {
+        // Add user's new message to history
+        conversationHistory.push({
+            role: "user",
+            parts: [{ text: prompt }]
+        });
+
         const response = await fetch(`${API_URL}?key=${config.GEMINI_API_KEY}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                contents: [{
-                    parts: [{
-                        text: `You are a helpful teaching assistant for a Coursera course. 
-                              Use the following course context to answer the student's question:
-                              ${JSON.stringify(courseContext)}
-                              
-                              Student's question: ${prompt}`
-                    }]
-                }],
+                contents: conversationHistory,
                 generationConfig: {
                     temperature: 0.7,
                     topK: 40,
@@ -83,22 +105,46 @@ async function generateResponse(prompt, courseContext) {
             })
         });
 
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error('API Error:', errorData);
+            throw new Error(`API error: ${errorData.error?.message || 'Unknown error'}`);
+        }
+
         const data = await response.json();
+        console.log('API Response:', data);
         
         if (data.candidates && data.candidates[0].content) {
-            return data.candidates[0].content.parts[0].text;
+            const responseText = data.candidates[0].content.parts[0].text;
+            
+            // Add model's response to history
+            conversationHistory.push({
+                role: "model",
+                parts: [{ text: responseText }]
+            });
+
+            // Keep only the last 10 messages to prevent context window overflow
+            if (conversationHistory.length > 12) { // 2 initial + 10 conversation
+                conversationHistory = [
+                    ...conversationHistory.slice(0, 2), // Keep initial context
+                    ...conversationHistory.slice(-10) // Keep last 10 messages
+                ];
+            }
+
+            return responseText;
         } else {
             throw new Error('No response generated');
         }
     } catch (error) {
-        console.error('Error calling Gemini API:', error);
-        return 'I apologize, but I encountered an error processing your request. Please try again.';
+        console.error('Error details:', error);
+        return `I apologize, but I encountered an error: ${error.message}. Please try again.`;
     }
 }
 
 // Initialize extension
 function init() {
     const courseData = scrapeCourseData();
+    initializeConversation(courseData);
     const chatButton = createChatButton();
     const chatPopup = createChatPopup();
     
