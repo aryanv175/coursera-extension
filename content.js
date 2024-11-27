@@ -3,6 +3,45 @@ const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-
 // Store conversation history
 let conversationHistory = [];
 
+// Enhanced course data scraping
+function scrapeCourseData() {
+    const courseData = {
+        title: document.querySelector('h1')?.textContent?.trim(),
+        description: document.querySelector('[data-e2e="course-description"]')?.textContent?.trim(),
+        // Get syllabus information
+        syllabus: Array.from(document.querySelectorAll('[data-e2e="course-module"]')).map(module => ({
+            title: module.querySelector('h3')?.textContent?.trim(),
+            content: Array.from(module.querySelectorAll('[data-e2e="lesson-item"]')).map(lesson => ({
+                title: lesson.textContent?.trim(),
+                duration: lesson.querySelector('.duration')?.textContent?.trim()
+            }))
+        })),
+        // Get instructor information
+        instructors: Array.from(document.querySelectorAll('[data-e2e="instructor-info"]')).map(instructor => ({
+            name: instructor.querySelector('.instructor-name')?.textContent?.trim(),
+            title: instructor.querySelector('.instructor-title')?.textContent?.trim()
+        })),
+        // Get course details
+        details: {
+            level: document.querySelector('[data-e2e="course-level"]')?.textContent?.trim(),
+            duration: document.querySelector('[data-e2e="course-duration"]')?.textContent?.trim(),
+            rating: document.querySelector('[data-e2e="course-rating"]')?.textContent?.trim()
+        }
+    };
+    
+    console.log('Scraped Course Data:', courseData);
+    return courseData;
+}
+
+// Initialize conversation with enhanced context
+function initializeConversation(courseData) {
+    const courseContext = `
+        Course: ${courseData.title}
+        Description: ${courseData.description}
+        Level: ${courseData.details?.level || 'Not specified'}
+        Duration: ${courseData.details?.duration || 'Not specified'}
+        
+        Syllabus Overview:
 // Initialize conversation with system message
 function initializeConversation(courseContext) {
     conversationHistory = [{
