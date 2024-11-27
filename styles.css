@@ -8,21 +8,27 @@
 }
 
 .course-assistant-chat-button {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: #0056D2;
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    z-index: 10000;
-    transition: all 0.2s ease;
+    position: fixed !important;
+    bottom: 20px !important;
+    right: 20px !important;
+    width: 48px !important;
+    height: 48px !important;
+    border-radius: 50% !important;
+    background: linear-gradient(135deg, #2E7CF6 0%, #7C4DFF 100%) !important;
+    color: white !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+    z-index: 2147483647 !important;
+    transition: all 0.2s ease !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    transform: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
 .course-assistant-chat-button svg {
@@ -33,6 +39,7 @@
 .course-assistant-chat-button:hover {
     transform: scale(1.05);
     box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+    background: linear-gradient(135deg, #1E6CF5 0%, #6C3DFF 100%);
 }
 
 .course-assistant-popup {
@@ -213,4 +220,26 @@
     font-size: 24px;
     font-weight: 600;
     color: white;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.course-assistant-chat-button {
+    animation: pulse 2s infinite;
+}
+
+.course-assistant-chat-button:hover {
+    animation: none;
+}
+
+/* Ensure the button stays on top of everything */
+#courseAssistantButton {
+    position: fixed !important;
+    z-index: 2147483647 !important;
+    visibility: visible !important;
+    opacity: 1 !important;
 } 
