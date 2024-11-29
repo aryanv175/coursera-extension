@@ -355,27 +355,43 @@ function base64ToBytes(base64) {
     return Uint8Array.from(binString, (m) => m.charCodeAt(0));
 }
 
-// Update the analyzeImageWithGemini function with the correct model
 async function analyzeImageWithGemini(imageBase64) {
     try {
-        console.log("Preparing to analyze image with Gemini Vision...");
+        console.log("Preparing to analyze image with Gemini 1.5 Pro Vision...");
         
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-vision:generateContent?key=${config.GEMINI_API_KEY}`, {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${config.GEMINI_API_KEY}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
                 contents: [{
-                    parts: [{
-                        text: "You are the Coursera Assistant. Please explain what you see in this video frame from the course lecture."
-                    }, {
-                        inline_data: {
-                            mime_type: "image/jpeg",
-                            data: imageBase64.split(',')[1]
+                    parts: [
+                        {
+                            inlineData: {
+                                mimeType: "image/jpeg",
+                                data: imageBase64.split(',')[1] // Remove base64 prefix
+                            }
+                        },
+                        {
+                            text: "Analyze this screenshot from a lecture. explain what you see in the screenshot in a concise manner. do not use any bold words."
                         }
-                    }]
-                }]
+                    ]
+                }],
+                generationConfig: {
+                    temperature: 0.4,
+                    maxOutputTokens: 2048,
+                },
+                safetySettings: [
+                    {
+                        category: "HARM_CATEGORY_HARASSMENT",
+                        threshold: "BLOCK_MEDIUM_AND_ABOVE"
+                    },
+                    {
+                        category: "HARM_CATEGORY_HATE_SPEECH",
+                        threshold: "BLOCK_MEDIUM_AND_ABOVE"
+                    }
+                ]
             })
         });
 
@@ -388,14 +404,13 @@ async function analyzeImageWithGemini(imageBase64) {
         const data = await response.json();
         console.log('Gemini Vision API Response:', data);
 
-        if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
-            return data.candidates[0].content.parts[0].text;
-        } else {
-            throw new Error('No valid response from Gemini Vision API');
-        }
+        // Extract and return the text response
+        return data.candidates?.[0]?.content?.parts?.[0]?.text || 
+               "No analysis could be generated from the screenshot.";
+
     } catch (error) {
         console.error('Error analyzing image with Gemini Vision:', error);
-        return "I apologize, but I encountered an error analyzing the image. Please try again or ask about the content directly.";
+        return `I apologize, but I encountered an error analyzing the image: ${error.message}`;
     }
 }
 
@@ -473,7 +488,7 @@ function addScreenshotButton(video) {
             video.pause();
             console.log("Capturing video frame...");
             const imageBase64 = await captureVideoFrame(video);
-            console.log("Video frame captured successfully");
+            console.log("Video frame captured, size:", imageBase64.length);
             
             const chatPopup = document.querySelector('.course-assistant-popup');
             const messagesContainer = chatPopup.querySelector('.chat-messages');
@@ -519,7 +534,7 @@ function addScreenshotButton(video) {
             messagesContainer.innerHTML += `
                 <div class="message assistant">
                     <div class="message-avatar">C</div>
-                    <div class="message-content">I apologize, but I encountered an error processing the screenshot. Please try again.</div>
+                    <div class="message-content">I apologize, but I encountered an error processing the screenshot: ${error.message}</div>
                 </div>
             `;
         }
