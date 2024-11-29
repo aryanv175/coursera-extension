@@ -34,13 +34,10 @@ Coursera Assistant is a Chrome extension that enhances your learning experience 
 
 ## Monetization Strategy
 
-### Subscription Model
-- **Free Tier**: Basic course assistance with limited queries
-- **Premium Features**:
-  - Unlimited AI interactions
-  - Visual analysis capability
-  - Advanced concept explanations
-  - Personalized learning insights
+### Revenue: Subscription Model
+
+![Uploading image.png…]()
+
 
 ### Payment Processing
 - **Integration**: Stripe payment gateway
