@@ -44,10 +44,10 @@
 
 .course-assistant-popup {
     position: fixed;
-    bottom: 80px;
+    bottom: 20px;
     right: 20px;
     width: 380px;
-    height: 600px;
+    height: calc(100vh - 40px);
     background: #FFFFFF;
     border-radius: 16px;
     box-shadow: 0 6px 20px rgba(0,0,0,0.15);
@@ -242,4 +242,26 @@
     z-index: 2147483647 !important;
     visibility: visible !important;
     opacity: 1 !important;
+}
+
+/* Add styles for screenshot functionality */
+.screenshot-button-container {
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.video-container:hover .screenshot-button-container {
+    opacity: 1;
+}
+
+.screenshot-button {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.screenshot-button:hover {
+    transform: scale(1.1);
 } 

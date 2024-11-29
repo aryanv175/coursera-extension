@@ -44,115 +44,91 @@ function waitForElement(selector, timeout = 10000) {
     });
 }
 
-// Enhanced scraping function
+// Enhanced scraping function to handle both video lectures and reading materials
 async function scrapeCourseData() {
     try {
-        console.log("Starting course data scraping...");
+        const currentUrl = window.location.href;
+        console.log("Starting course data scraping for URL:", currentUrl);
         
-        // Wait for any main content container
-        const mainContainer = await waitForElement([
-            '.rc-MainContainer',
-            '.course-content',
-            '.rc-VideoMiniPlayer',
-            '.course-page',
-            'main'
-        ]);
-
-        // Continue even if main container is not found
-        console.log("Main container found:", !!mainContainer);
+        // Wait for content to load
+        await new Promise(resolve => setTimeout(resolve, 3000));
 
         const courseData = {
-            title: '',
-            description: '',
-            syllabus: [],
+            title: document.querySelector('h1')?.textContent?.trim() || 'Coursera Course',
             currentLecture: {
                 title: '',
-                transcript: '',
-                content: ''
+                content: '',
+                type: '' // 'video' or 'reading'
             },
             transcripts: {}
         };
 
-        // Scrape course title
-        try {
-            const titleElement = await waitForElement('h1.banner-title, h1.course-name');
-            courseData.title = titleElement?.textContent?.trim();
-            console.log("Found course title:", courseData.title);
-        } catch (e) {
-            console.warn("Could not find course title:", e);
-        }
-
-        // Scrape course description
-        try {
-            const descElement = await waitForElement('[data-e2e="course-description"], .about-section');
-            courseData.description = descElement?.textContent?.trim();
-            console.log("Found course description");
-        } catch (e) {
-            console.warn("Could not find course description:", e);
-        }
-
-        // Scrape current lecture content
-        try {
-            // Wait for video player or lecture content
-            const videoContainer = await waitForElement('.rc-VideoMiniPlayer, .video-container');
-            if (videoContainer) {
-                courseData.currentLecture.title = document.querySelector('.rc-LectureName')?.textContent?.trim();
-                console.log("Found lecture title:", courseData.currentLecture.title);
-            }
-        } catch (e) {
-            console.warn("Could not find video container:", e);
-        }
-
-        // Scrape transcript
-        try {
-            const transcriptButton = await waitForElement('button[aria-label="Show transcript"]');
-            if (transcriptButton) {
+        // Determine content type based on URL
+        if (currentUrl.includes('/lecture/')) {
+            courseData.currentLecture.type = 'video';
+            console.log("Detected video lecture content");
+            
+            // Get video lecture title
+            const lectureTitle = document.querySelector('.rc-LectureName, .title')?.textContent?.trim();
+            courseData.currentLecture.title = lectureTitle || 'Current Video Lecture';
+            
+            // Try to click transcript button if it exists and transcript is not visible
+            const transcriptButton = document.querySelector('button[aria-label="Show transcript"]');
+            if (transcriptButton && !document.querySelector('.phrases')) {
                 transcriptButton.click();
-                await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for transcript to load
-                
-                const transcriptContainer = await waitForElement('.rc-VideoTranscript');
-                if (transcriptContainer) {
-                    const transcriptSegments = Array.from(transcriptContainer.querySelectorAll('p'))
-                        .map(p => p.textContent.trim())
-                        .filter(text => text.length > 0);
-                    
-                    courseData.currentLecture.transcript = transcriptSegments.join('\n');
-                    console.log("Found transcript");
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+
+            // Get transcript content from phrases div
+            const phrasesDiv = document.querySelector('.phrases');
+            if (phrasesDiv) {
+                const transcriptParts = Array.from(phrasesDiv.querySelectorAll('span'))
+                    .map(span => span.textContent?.trim())
+                    .filter(text => text && text.length > 0);
+
+                if (transcriptParts.length > 0) {
+                    courseData.currentLecture.content = transcriptParts.join(' ');
+                    console.log("=== Scraped Video Transcript ===");
+                    console.log(`Found ${transcriptParts.length} transcript segments`);
+                    console.log("Sample:", courseData.currentLecture.content.substring(0, 200));
+                    console.log("Full length:", courseData.currentLecture.content.length);
+                    console.log("========================");
                 }
             }
-        } catch (e) {
-            console.warn("Could not find transcript:", e);
-        }
-
-        // Scrape syllabus
-        try {
-            const syllabusContainer = await waitForElement('.rc-WeekView');
-            if (syllabusContainer) {
-                const weeks = Array.from(syllabusContainer.querySelectorAll('.week'));
-                courseData.syllabus = weeks.map(week => ({
-                    title: week.querySelector('.week-title')?.textContent?.trim(),
-                    content: Array.from(week.querySelectorAll('.lesson-item')).map(lesson => ({
-                        title: lesson.querySelector('.lesson-name')?.textContent?.trim(),
-                        type: lesson.querySelector('.lesson-type')?.textContent?.trim()
-                    }))
-                }));
-                console.log("Found syllabus");
+        } 
+        else if (currentUrl.includes('/supplement/')) {
+            courseData.currentLecture.type = 'reading';
+            console.log("Detected reading material content");
+            
+            // Get reading material title
+            const readingTitle = document.querySelector('h1, .title')?.textContent?.trim();
+            courseData.currentLecture.title = readingTitle || 'Current Reading Material';
+            
+            // Get reading content
+            const readingContent = document.querySelector('.css-1474zrz');
+            if (readingContent) {
+                courseData.currentLecture.content = readingContent.textContent.trim();
+                console.log("=== Scraped Reading Content ===");
+                console.log("Sample:", courseData.currentLecture.content.substring(0, 200));
+                console.log("Full length:", courseData.currentLecture.content.length);
+                console.log("========================");
+            } else {
+                console.warn("Could not find reading content with class css-1474zrz");
             }
-        } catch (e) {
-            console.warn("Could not find syllabus:", e);
         }
 
-        // Store the scraped data
-        if (courseData.currentLecture.transcript) {
-            const url = window.location.href;
-            accumulatedTranscripts.set(url, {
+        // Store content with URL as key
+        if (courseData.currentLecture.content) {
+            accumulatedTranscripts.set(currentUrl, {
                 title: courseData.currentLecture.title,
-                transcript: courseData.currentLecture.transcript
+                type: courseData.currentLecture.type,
+                content: courseData.currentLecture.content
             });
-            courseData.transcripts = Object.fromEntries(accumulatedTranscripts);
         }
 
-        console.log("Final scraped data:", courseData);
+        // Add all accumulated content to course data
+        courseData.transcripts = Object.fromEntries(accumulatedTranscripts);
+
         return courseData;
     } catch (error) {
         console.error("Error scraping course data:", error);
@@ -160,56 +136,20 @@ async function scrapeCourseData() {
     }
 }
 
-// Initialize conversation with enhanced context
+// Update initialization conversation to handle both content types
 function initializeConversation(courseData) {
-    const courseContext = `
-        Course: ${courseData.title}
-        Description: ${courseData.description}
-        Level: ${courseData.details?.level || 'Not specified'}
-        Duration: ${courseData.details?.duration || 'Not specified'}
-        
-        Syllabus Overview:
-        ${courseData.syllabus.map(module => 
-            `- ${module.title}
-             ${module.content.map(lesson => `  • ${lesson.title}`).join('\n')}`
-        ).join('\n')}
-        
-        Instructors:
-        ${courseData.instructors.map(instructor => 
-            `- ${instructor.name}${instructor.title ? ` (${instructor.title})` : ''}`
-        ).join('\n')}
+    const contentContext = Object.entries(courseData.transcripts)
+        .map(([url, data]) => `
+            ${data.type === 'video' ? 'Video Lecture' : 'Reading Material'}: ${data.title}
+            Content: ${data.content}
+        `).join('\n\n');
 
-        Current Lecture: ${courseData.currentLecture.title}
-        
-        Accumulated Lecture Transcripts:
-        ${Object.entries(courseData.transcripts).map(([url, data]) => 
-            `--- Lecture: ${data.title} ---\n${data.transcript}\n`
-        ).join('\n')}
-    `.trim();
-
-    conversationHistory = [{
-        role: "user",
-        parts: [{
-            text: `You are a Coursera teaching assistant for: "${courseData.title}". 
-                  
-                  Here is the course context:
-                  ${courseContext}
-                  
-                  Instructions:
-                  1. Only answer questions related to this specific course and its content
-                  2. If a question is inappropriate or unrelated to the course, respond with exactly:
-                     "Please keep the questions related to the scope of this course."
-                  3. Use the course context to provide accurate, helpful responses
-                  4. Keep responses concise and focused
-                  
-                  Acknowledge that you understand these instructions.`
-        }]
-    }, {
-        role: "model",
-        parts: [{
-            text: "I understand. I'm your Coursera Assistant for this course. I'll help you understand the course material while keeping responses focused and course-related. What would you like to know about the course?"
-        }]
-    }];
+    // Instead of storing conversation history, just log the initialization
+    console.log("Initialized with course context:", {
+        title: courseData.title,
+        currentMaterial: courseData.currentLecture.title,
+        type: courseData.currentLecture.type
+    });
 }
 
 // Create and append chat button
@@ -279,7 +219,7 @@ function createChatPopup() {
 // Update generateResponse to better handle off-topic questions
 async function generateResponse(prompt, courseContext) {
     try {
-        // Allow common pleasantries
+        // Handle pleasantries
         const pleasantries = /^(hi|hey|hello|thanks|thank you|bye|goodbye|ok|okay)$/i;
         if (pleasantries.test(prompt.trim())) {
             return prompt.toLowerCase().includes('thank') ? 
@@ -287,7 +227,7 @@ async function generateResponse(prompt, courseContext) {
                 "Hello! How can I help you with this course?";
         }
 
-        // Check for obviously inappropriate or unrelated content
+        // Check for inappropriate content
         const inappropriatePatterns = [
             /\b(sex|porn|nude|dating|gambling|drugs|illegal|hack|crack|pirate)\b/i,
             /(how to cheat|exam answers|test answers|assignment solutions)/i,
@@ -299,19 +239,20 @@ async function generateResponse(prompt, courseContext) {
             return "Please keep the questions related to the scope of this course.";
         }
 
-        // Add user's new message to history
-        conversationHistory.push({
-            role: "user",
-            parts: [{ text: prompt }]
-        });
-
         const response = await fetch(`${API_URL}?key=${config.GEMINI_API_KEY}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                contents: conversationHistory,
+                contents: [{
+                    parts: [{
+                        text: `You are the Coursera Assistant. Use the following course content to answer the question:
+                              ${JSON.stringify(courseContext)}
+                              
+                              Question: ${prompt}`
+                    }]
+                }],
                 generationConfig: {
                     temperature: 0.7,
                     topK: 40,
@@ -331,22 +272,11 @@ async function generateResponse(prompt, courseContext) {
         console.log('API Response:', data);
         
         if (data.candidates && data.candidates[0].content) {
-            const responseText = data.candidates[0].content.parts[0].text;
+            let responseText = data.candidates[0].content.parts[0].text;
             
-            // Add model's response to history
-            conversationHistory.push({
-                role: "model",
-                parts: [{ text: responseText }]
-            });
-
-            // Keep only the last 10 messages to prevent context window overflow
-            if (conversationHistory.length > 12) { // 2 initial + 10 conversation
-                conversationHistory = [
-                    ...conversationHistory.slice(0, 2), // Keep initial context
-                    ...conversationHistory.slice(-10) // Keep last 10 messages
-                ];
-            }
-
+            // Clean up formatting
+            responseText = responseText.replace(/\*\*(.*?)\*\*/g, '$1');
+            
             return responseText;
         } else {
             throw new Error('No response generated');
@@ -357,66 +287,196 @@ async function generateResponse(prompt, courseContext) {
     }
 }
 
-// Add mutation observer to detect lecture changes
-function observeLectureChanges() {
-    const observer = new MutationObserver((mutations) => {
-        // Check if URL has changed (indicating lecture change)
-        if (window.location.href !== lastUrl) {
-            lastUrl = window.location.href;
+// Update URL change detection
+function observeUrlChanges() {
+    let lastUrl = window.location.href;
+    
+    setInterval(async () => {
+        const currentUrl = window.location.href;
+        if (currentUrl !== lastUrl) {
+            console.log("URL changed, waiting for new content to load...");
+            lastUrl = currentUrl;
             
-            // Re-scrape data and update context
-            const courseData = scrapeCourseData();
-            initializeConversation(courseData);
+            // Wait for content to load
+            await new Promise(resolve => setTimeout(resolve, 3000));
             
-            // Add system message about context update
-            conversationHistory.push({
-                role: "system",
-                parts: [{
-                    text: "Lecture context has been updated. I now have information about the new lecture content."
-                }]
-            });
+            // Re-scrape data
+            const newCourseData = await scrapeCourseData();
+            if (newCourseData) {
+                console.log("New lecture content scraped, updating context...");
+                initializeConversation(newCourseData);
+                
+                // Notify about context update
+                conversationHistory.push({
+                    role: "system",
+                    parts: [{
+                        text: `Updated context with new lecture: "${newCourseData.currentLecture.title}"`
+                    }]
+                });
+            }
         }
-    });
-
-    // Observe changes to the document
-    observer.observe(document.body, {
-        childList: true,
-        subtree: true
-    });
+    }, 1000);
 }
 
-// Store last URL to detect changes
-let lastUrl = window.location.href;
+// Add function to handle screenshots
+async function captureVideoFrame(video) {
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    return canvas.toDataURL('image/jpeg');
+}
 
-// Update init function to handle async scraping
+// Function to convert base64 to binary
+function base64ToBytes(base64) {
+    const binString = atob(base64.split(',')[1]);
+    return Uint8Array.from(binString, (m) => m.charCodeAt(0));
+}
+
+// Add function to analyze image with Gemini
+async function analyzeImageWithGemini(imageBase64) {
+    try {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key=${config.GEMINI_API_KEY}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                contents: [{
+                    parts: [
+                        { text: "You are the Coursera Assistant. Please explain what you see in this video frame from the course lecture:" },
+                        {
+                            inline_data: {
+                                mime_type: "image/jpeg",
+                                data: imageBase64.split(',')[1]
+                            }
+                        }
+                    ]
+                }]
+            })
+        });
+
+        const data = await response.json();
+        return data.candidates[0].content.parts[0].text;
+    } catch (error) {
+        console.error('Error analyzing image:', error);
+        return "I apologize, but I couldn't analyze the image at this moment.";
+    }
+}
+
+// Function to add screenshot button to video
+function addScreenshotButton(video) {
+    const buttonContainer = document.createElement('div');
+    buttonContainer.className = 'screenshot-button-container';
+    buttonContainer.style.cssText = `
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 1000;
+    `;
+
+    const button = document.createElement('button');
+    button.className = 'screenshot-button';
+    button.innerHTML = `
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 15.2C13.7673 15.2 15.2 13.7673 15.2 12C15.2 10.2327 13.7673 8.8 12 8.8C10.2327 8.8 8.8 10.2327 8.8 12C8.8 13.7673 10.2327 15.2 12 15.2Z" fill="white"/>
+            <path d="M9 3L7.17 5H4C2.9 5 2 5.9 2 7V19C2 20.1 2.9 21 4 21H20C21.1 21 22 20.1 22 19V7C22 5.9 21.1 5 20 5H16.83L15 3H9ZM12 17C9.24 17 7 14.76 7 12C7 9.24 9.24 7 12 7C14.76 7 17 9.24 17 12C17 14.76 14.76 17 12 17Z" fill="white"/>
+        </svg>
+    `;
+    button.style.cssText = `
+        background: rgba(0, 0, 0, 0.5);
+        border: none;
+        border-radius: 50%;
+        padding: 8px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    `;
+
+    button.addEventListener('mouseover', () => {
+        button.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+    });
+
+    button.addEventListener('mouseout', () => {
+        button.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+    });
+
+    button.addEventListener('click', async () => {
+        video.pause();
+        const imageBase64 = await captureVideoFrame(video);
+        
+        // Get chat popup and messages container
+        const chatPopup = document.querySelector('.course-assistant-popup');
+        const messagesContainer = chatPopup.querySelector('.chat-messages');
+        
+        // Show chat if hidden
+        chatPopup.classList.remove('hidden');
+        
+        // Add screenshot message
+        messagesContainer.innerHTML += `
+            <div class="message user">
+                <div class="message-content">
+                    <img src="${imageBase64}" style="max-width: 100%; border-radius: 8px;">
+                </div>
+            </div>
+        `;
+        
+        // Add loading message
+        const loadingMessage = document.createElement('div');
+        loadingMessage.className = 'message assistant';
+        loadingMessage.innerHTML = `
+            <div class="message-avatar">C</div>
+            <div class="message-content loading">Analyzing screenshot...</div>
+        `;
+        messagesContainer.appendChild(loadingMessage);
+        
+        // Scroll to bottom
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        
+        // Analyze image
+        const analysis = await analyzeImageWithGemini(imageBase64);
+        
+        // Replace loading message with analysis
+        loadingMessage.innerHTML = `
+            <div class="message-avatar">C</div>
+            <div class="message-content">${analysis}</div>
+        `;
+        
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    });
+
+    buttonContainer.appendChild(button);
+    video.parentElement.appendChild(buttonContainer);
+}
+
+// Update init function to add screenshot button when on video lectures
 async function init() {
     try {
         console.log("Initializing extension...");
         
-        // Create button immediately
+        // Create chat elements
         const chatButton = createChatButton();
         const chatPopup = createChatPopup();
-        
-        // Set up event listeners
         setupEventListeners(chatButton, chatPopup, null);
+        setInterval(ensureChatButtonExists, 2000);
         
-        // Ensure button exists with more frequent checks initially
-        const checkInterval = setInterval(ensureChatButtonExists, 1000);
+        // If on a video lecture page, add screenshot button
+        if (window.location.href.includes('/lecture/')) {
+            const videoElement = await waitForElement('video');
+            if (videoElement) {
+                addScreenshotButton(videoElement);
+            }
+        }
         
-        // After 10 seconds, reduce check frequency
-        setTimeout(() => {
-            clearInterval(checkInterval);
-            setInterval(ensureChatButtonExists, 5000);
-        }, 10000);
-        
-        // Then scrape course data
+        // Rest of initialization...
+        await new Promise(resolve => setTimeout(resolve, 2000));
         const courseData = await scrapeCourseData();
         if (courseData) {
-            console.log("Successfully scraped course data");
+            console.log("Successfully scraped initial course data");
             initializeConversation(courseData);
-        } else {
-            console.error("Failed to scrape course data");
         }
+        
+        observeUrlChanges();
+        
     } catch (error) {
         console.error("Error during initialization:", error);
     }
