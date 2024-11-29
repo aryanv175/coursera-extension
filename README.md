@@ -30,7 +30,6 @@ Coursera Assistant is a Chrome extension that enhances your learning experience 
 
 ### Privacy & Security
 - **Data Protection**: Processes only course-related content
-- **Secure Communication**: Encrypted API interactions
 - **User Privacy**: No personal data storage
 
 ## Monetization Strategy
@@ -49,6 +48,7 @@ Coursera Assistant is a Chrome extension that enhances your learning experience 
 - **Secure Transactions**: PCI-compliant payment processing
 
 ## Future Enhancements
+- AI powered questionnaires
 - Advanced learning analytics
 - Personalized study recommendations
 - Interactive concept visualization
