@@ -36,7 +36,8 @@ Coursera Assistant is a Chrome extension that enhances your learning experience 
 
 ### Revenue: Subscription Model
 
-![Uploading image.png…]()
+<img width="1194" alt="image" src="https://github.com/user-attachments/assets/91610f98-b9b3-4c6c-9450-568091bbe394">
+
 
 
 ### Payment Processing
