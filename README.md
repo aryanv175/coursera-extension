@@ -65,4 +65,4 @@ Coursera Assistant is a Chrome extension that enhances your learning experience 
 For questions or support, please open an issue in the repository or contact our support team.
 
 ## License
-This project is licensed under the ISC License - see the LICENSE file for details.
+This project is licensed under the Creative Commons Attribution-NonCommercial 4.0 International License - see the LICENSE file for details.
