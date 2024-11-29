@@ -269,6 +269,7 @@
     pointer-events: auto !important;
     z-index: 999999999 !important;
     background: none !important;
+    transform: none !important;
 }
 
 .screenshot-button {
@@ -279,11 +280,13 @@
     justify-content: center !important;
     width: 100% !important;
     height: 100% !important;
-    background: rgba(0, 0, 0, 0.85) !important;
-    border: 2px solid white !important;
+    background: linear-gradient(135deg, #2E7CF6 0%, #7C4DFF 100%) !important;
+    border: 2px solid rgba(255, 255, 255, 0.9) !important;
     border-radius: 50% !important;
     cursor: pointer !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 
+                0 0 0 2px rgba(255, 255, 255, 0.8), 
+                0 0 0 4px rgba(46, 124, 246, 0.3) !important;
     transition: all 0.2s ease !important;
     opacity: 1 !important;
     visibility: visible !important;
@@ -291,8 +294,15 @@
 }
 
 .screenshot-button:hover {
-    transform: scale(1.1) !important;
-    background: rgba(0, 0, 0, 0.95) !important;
+    transform: scale(1.05) !important;
+    background: linear-gradient(135deg, #1E6CF5 0%, #6C3DFF 100%) !important;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4),
+                0 0 0 2px rgba(255, 255, 255, 0.9),
+                0 0 0 4px rgba(46, 124, 246, 0.4) !important;
+}
+
+.screenshot-button:active {
+    transform: scale(0.95) !important;
 }
 
 /* Ensure video container has proper positioning */

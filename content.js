@@ -460,35 +460,42 @@ function addScreenshotButton(video) {
         justify-content: center !important;
         width: 100% !important;
         height: 100% !important;
-        background: rgba(0, 0, 0, 0.85) !important;
+        background: linear-gradient(135deg, #1E6CF5 0%, #6C3DFF 100%) !important;
         border: 2px solid white !important;
         border-radius: 50% !important;
         cursor: pointer !important;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
-        transition: all 0.2s ease !important;
         opacity: 1 !important;
         visibility: visible !important;
         z-index: 999999999 !important;
     `;
 
+
+
     // Add hover effects
+    
     button.addEventListener('mouseenter', () => {
         button.style.transform = 'scale(1.1)';
-        button.style.background = 'rgba(0, 0, 0, 0.95)';
     });
 
     button.addEventListener('mouseleave', () => {
         button.style.transform = 'scale(1)';
-        button.style.background = 'rgba(0, 0, 0, 0.85)';
     });
-
+    
     // Add click handler
     button.addEventListener('click', async () => {
         try {
+            // Add active state
+            button.style.transform = 'scale(0.95)';
+            
+            
             video.pause();
             console.log("Capturing video frame...");
             const imageBase64 = await captureVideoFrame(video);
-            console.log("Video frame captured, size:", imageBase64.length);
+            
+            // Reset button state immediately after capture
+            button.style.transform = 'scale(1)';
+            
             
             const chatPopup = document.querySelector('.course-assistant-popup');
             const messagesContainer = chatPopup.querySelector('.chat-messages');
@@ -527,6 +534,9 @@ function addScreenshotButton(video) {
             
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         } catch (error) {
+            // Reset button state in case of error
+            button.style.transform = 'scale(1)';
+            
             console.error("Error processing screenshot:", error);
             const chatPopup = document.querySelector('.course-assistant-popup');
             const messagesContainer = chatPopup.querySelector('.chat-messages');
