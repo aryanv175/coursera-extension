@@ -216,8 +216,8 @@ function createChatPopup() {
     return popup;
 }
 
-// Update generateResponse to better handle off-topic questions
-async function generateResponse(prompt, courseContext) {
+// Update generateResponse function to properly use course content
+async function generateResponse(prompt, courseData) {
     try {
         // Handle pleasantries
         const pleasantries = /^(hi|hey|hello|thanks|thank you|bye|goodbye|ok|okay)$/i;
@@ -239,6 +239,20 @@ async function generateResponse(prompt, courseContext) {
             return "Please keep the questions related to the scope of this course.";
         }
 
+        // Create a formatted context from all accumulated transcripts
+        const courseContext = Object.entries(courseData.transcripts)
+            .map(([url, data]) => `
+                === ${data.type === 'video' ? 'Video Lecture' : 'Reading Material'}: ${data.title} ===
+                ${data.content}
+            `).join('\n\n');
+
+        console.log("Sending context to Gemini:", {
+            courseTitle: courseData.title,
+            currentLecture: courseData.currentLecture.title,
+            contextLength: courseContext.length,
+            transcriptsCount: Object.keys(courseData.transcripts).length
+        });
+
         const response = await fetch(`${API_URL}?key=${config.GEMINI_API_KEY}`, {
             method: 'POST',
             headers: {
@@ -247,10 +261,18 @@ async function generateResponse(prompt, courseContext) {
             body: JSON.stringify({
                 contents: [{
                     parts: [{
-                        text: `You are the Coursera Assistant. Use the following course content to answer the question:
-                              ${JSON.stringify(courseContext)}
+                        text: `You are the Coursera Assistant for the course "${courseData.title}".
+                              Current lecture/reading: "${courseData.currentLecture.title}"
                               
-                              Question: ${prompt}`
+                              Use this course content to answer the question:
+                              ${courseContext}
+                              
+                              Student's question: ${prompt}
+                              
+                              Remember to:
+                              1. Base your answer on the course content provided above
+                              2. If the answer isn't in the content, say so
+                              3. Keep responses focused and relevant to the course material`
                     }]
                 }],
                 generationConfig: {
@@ -333,46 +355,61 @@ function base64ToBytes(base64) {
     return Uint8Array.from(binString, (m) => m.charCodeAt(0));
 }
 
-// Add function to analyze image with Gemini
+// Update the analyzeImageWithGemini function with the correct model
 async function analyzeImageWithGemini(imageBase64) {
     try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key=${config.GEMINI_API_KEY}`, {
+        console.log("Preparing to analyze image with Gemini Vision...");
+        
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-vision:generateContent?key=${config.GEMINI_API_KEY}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
                 contents: [{
-                    parts: [
-                        { text: "You are the Coursera Assistant. Please explain what you see in this video frame from the course lecture:" },
-                        {
-                            inline_data: {
-                                mime_type: "image/jpeg",
-                                data: imageBase64.split(',')[1]
-                            }
+                    parts: [{
+                        text: "You are the Coursera Assistant. Please explain what you see in this video frame from the course lecture."
+                    }, {
+                        inline_data: {
+                            mime_type: "image/jpeg",
+                            data: imageBase64.split(',')[1]
                         }
-                    ]
+                    }]
                 }]
             })
         });
 
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error('Gemini Vision API Error:', errorData);
+            throw new Error(`API error: ${errorData.error?.message || 'Unknown error'}`);
+        }
+
         const data = await response.json();
-        return data.candidates[0].content.parts[0].text;
+        console.log('Gemini Vision API Response:', data);
+
+        if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
+            return data.candidates[0].content.parts[0].text;
+        } else {
+            throw new Error('No valid response from Gemini Vision API');
+        }
     } catch (error) {
-        console.error('Error analyzing image:', error);
-        return "I apologize, but I couldn't analyze the image at this moment.";
+        console.error('Error analyzing image with Gemini Vision:', error);
+        return "I apologize, but I encountered an error analyzing the image. Please try again or ask about the content directly.";
     }
 }
 
-// Function to add screenshot button to video
+// Update the screenshot button creation with higher z-index
 function addScreenshotButton(video) {
     const buttonContainer = document.createElement('div');
     buttonContainer.className = 'screenshot-button-container';
     buttonContainer.style.cssText = `
         position: absolute;
         top: 10px;
-        right: 10px;
-        z-index: 1000;
+        left: 10px;
+        z-index: 2147483646;
+        opacity: 1 !important;
+        visibility: visible !important;
     `;
 
     const button = document.createElement('button');
@@ -384,67 +421,91 @@ function addScreenshotButton(video) {
         </svg>
     `;
     button.style.cssText = `
-        background: rgba(0, 0, 0, 0.5);
-        border: none;
+        background: rgba(0, 0, 0, 0.7);
+        border: 2px solid rgba(255, 255, 255, 0.8);
         border-radius: 50%;
         padding: 8px;
         cursor: pointer;
-        transition: background-color 0.2s;
+        transition: all 0.2s ease;
+        width: 44px;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        opacity: 1 !important;
+        visibility: visible !important;
     `;
 
     button.addEventListener('mouseover', () => {
-        button.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+        button.style.backgroundColor = 'rgba(0, 0, 0, 0.9)';
+        button.style.transform = 'scale(1.1)';
     });
 
     button.addEventListener('mouseout', () => {
-        button.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+        button.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+        button.style.transform = 'scale(1)';
     });
 
     button.addEventListener('click', async () => {
-        video.pause();
-        const imageBase64 = await captureVideoFrame(video);
-        
-        // Get chat popup and messages container
-        const chatPopup = document.querySelector('.course-assistant-popup');
-        const messagesContainer = chatPopup.querySelector('.chat-messages');
-        
-        // Show chat if hidden
-        chatPopup.classList.remove('hidden');
-        
-        // Add screenshot message
-        messagesContainer.innerHTML += `
-            <div class="message user">
-                <div class="message-content">
-                    <img src="${imageBase64}" style="max-width: 100%; border-radius: 8px;">
+        try {
+            video.pause();
+            console.log("Capturing video frame...");
+            const imageBase64 = await captureVideoFrame(video);
+            console.log("Video frame captured successfully");
+            
+            const chatPopup = document.querySelector('.course-assistant-popup');
+            const messagesContainer = chatPopup.querySelector('.chat-messages');
+            
+            chatPopup.classList.remove('hidden');
+            
+            // Add screenshot message
+            messagesContainer.innerHTML += `
+                <div class="message user">
+                    <div class="message-content">
+                        <img src="${imageBase64}" style="max-width: 100%; border-radius: 8px; margin-bottom: 8px;">
+                        <div style="font-size: 12px; color: #666;">Screenshot from lecture</div>
+                    </div>
                 </div>
-            </div>
-        `;
-        
-        // Add loading message
-        const loadingMessage = document.createElement('div');
-        loadingMessage.className = 'message assistant';
-        loadingMessage.innerHTML = `
-            <div class="message-avatar">C</div>
-            <div class="message-content loading">Analyzing screenshot...</div>
-        `;
-        messagesContainer.appendChild(loadingMessage);
-        
-        // Scroll to bottom
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        
-        // Analyze image
-        const analysis = await analyzeImageWithGemini(imageBase64);
-        
-        // Replace loading message with analysis
-        loadingMessage.innerHTML = `
-            <div class="message-avatar">C</div>
-            <div class="message-content">${analysis}</div>
-        `;
-        
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            `;
+            
+            // Add loading message
+            const loadingMessage = document.createElement('div');
+            loadingMessage.className = 'message assistant';
+            loadingMessage.innerHTML = `
+                <div class="message-avatar">C</div>
+                <div class="message-content loading">Analyzing screenshot...</div>
+            `;
+            messagesContainer.appendChild(loadingMessage);
+            
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            
+            console.log("Sending image to Gemini Vision API...");
+            const analysis = await analyzeImageWithGemini(imageBase64);
+            console.log("Received analysis from Gemini Vision API");
+            
+            loadingMessage.innerHTML = `
+                <div class="message-avatar">C</div>
+                <div class="message-content">${analysis}</div>
+            `;
+            
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        } catch (error) {
+            console.error("Error processing screenshot:", error);
+            const chatPopup = document.querySelector('.course-assistant-popup');
+            const messagesContainer = chatPopup.querySelector('.chat-messages');
+            
+            messagesContainer.innerHTML += `
+                <div class="message assistant">
+                    <div class="message-avatar">C</div>
+                    <div class="message-content">I apologize, but I encountered an error processing the screenshot. Please try again.</div>
+                </div>
+            `;
+        }
     });
 
     buttonContainer.appendChild(button);
+    video.parentElement.style.position = 'relative';
     video.parentElement.appendChild(buttonContainer);
 }
 
@@ -456,23 +517,14 @@ async function init() {
         // Create chat elements
         const chatButton = createChatButton();
         const chatPopup = createChatPopup();
-        setupEventListeners(chatButton, chatPopup, null);
-        setInterval(ensureChatButtonExists, 2000);
         
-        // If on a video lecture page, add screenshot button
-        if (window.location.href.includes('/lecture/')) {
-            const videoElement = await waitForElement('video');
-            if (videoElement) {
-                addScreenshotButton(videoElement);
-            }
-        }
-        
-        // Rest of initialization...
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // Initial course data scraping
         const courseData = await scrapeCourseData();
         if (courseData) {
             console.log("Successfully scraped initial course data");
             initializeConversation(courseData);
+            // Pass courseData to setupEventListeners
+            setupEventListeners(chatButton, chatPopup, courseData);
         }
         
         observeUrlChanges();
@@ -519,7 +571,9 @@ function setupEventListeners(chatButton, chatPopup, courseData) {
             textarea.value = '';
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
-            const response = await generateResponse(text, courseData);
+            // Get latest course data before generating response
+            const currentCourseData = await scrapeCourseData();
+            const response = await generateResponse(text, currentCourseData);
             
             loadingMessage.innerHTML = `
                 <div class="message-avatar">C</div>

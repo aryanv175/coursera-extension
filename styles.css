@@ -20,7 +20,9 @@
     align-items: center !important;
     justify-content: center !important;
     cursor: pointer !important;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3), 
+                0 0 0 2px rgba(255,255,255,0.8), 
+                0 0 0 4px rgba(46,124,246,0.3) !important;
     z-index: 2147483647 !important;
     transition: all 0.2s ease !important;
     opacity: 1 !important;
@@ -37,9 +39,11 @@
 }
 
 .course-assistant-chat-button:hover {
-    transform: scale(1.05);
-    box-shadow: 0 6px 16px rgba(0,0,0,0.2);
-    background: linear-gradient(135deg, #1E6CF5 0%, #6C3DFF 100%);
+    transform: scale(1.05) !important;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.4),
+                0 0 0 2px rgba(255,255,255,0.9),
+                0 0 0 4px rgba(46,124,246,0.4) !important;
+    background: linear-gradient(135deg, #1E6CF5 0%, #6C3DFF 100%) !important;
 }
 
 .course-assistant-popup {
@@ -246,8 +250,25 @@
 
 /* Add styles for screenshot functionality */
 .screenshot-button-container {
-    opacity: 0;
-    transition: opacity 0.2s;
+    opacity: 1 !important;
+    visibility: visible !important;
+    z-index: 2147483646 !important;
+    position: absolute !important;
+    pointer-events: auto !important;
+    left: 10px !important;
+    right: auto !important;
+}
+
+.screenshot-button {
+    opacity: 1 !important;
+    visibility: visible !important;
+    z-index: 2147483646 !important;
+    position: relative !important;
+    pointer-events: auto !important;
+}
+
+.video-container {
+    position: relative !important;
 }
 
 .video-container:hover .screenshot-button-container {
