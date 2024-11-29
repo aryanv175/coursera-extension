@@ -1,4 +1,4 @@
-# Course Mate - AI-Powered Learning Companion
+# CourseMate (Coursera Assistant) - AI-Powered Learning Companion
 
 ## Overview
 Coursera Assistant is a Chrome extension that enhances your learning experience on Coursera by providing real-time assistance through AI-powered interactions. It serves as a virtual teaching assistant, helping students better understand course content through natural conversations and visual analysis.
