@@ -31,6 +31,7 @@ Coursera Assistant is a Chrome extension that enhances your learning experience 
 - **Real-time Processing**: Instant responses with maintained context
 
 ### Privacy & Security
+- **User Authentication**: Using firebase for Google Authentication
 - **Data Protection**: Processes only course-related content
 - **User Privacy**: No personal data storage
 
