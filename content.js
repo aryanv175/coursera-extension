@@ -401,15 +401,34 @@ async function analyzeImageWithGemini(imageBase64) {
 
 // Update the screenshot button creation with higher z-index
 function addScreenshotButton(video) {
+    // First, find the video player container
+    let videoContainer = video.closest('.video-container, .player-container, .rc-VideoMiniPlayer, [data-e2e="video-player"]');    
+    if (!videoContainer) {
+        // If no container found, find the closest parent with position relative/absolute
+        videoContainer = video.closest('div');
+        videoContainer.style.position = 'relative';
+    }
+
+    // Explicitly set container styles
+    videoContainer.style.position = 'relative';
+    videoContainer.style.zIndex = '1'; 
+    
+    // Remove any existing screenshot button
+    const existingButton = videoContainer.querySelector('.screenshot-button-container');
+    if (existingButton) {
+        existingButton.remove();
+    }
+
     const buttonContainer = document.createElement('div');
     buttonContainer.className = 'screenshot-button-container';
     buttonContainer.style.cssText = `
         position: absolute;
         top: 10px;
-        left: 10px;
+        right: 10px;
         z-index: 2147483646;
         opacity: 1 !important;
         visibility: visible !important;
+        display: block !important;
     `;
 
     const button = document.createElement('button');
@@ -505,8 +524,29 @@ function addScreenshotButton(video) {
     });
 
     buttonContainer.appendChild(button);
-    video.parentElement.style.position = 'relative';
-    video.parentElement.appendChild(buttonContainer);
+    videoContainer.appendChild(buttonContainer);
+
+    // Add periodic check to ensure button remains visible
+    const visibilityCheck = setInterval(() => {
+        if (!document.body.contains(buttonContainer)) {
+            videoContainer.appendChild(buttonContainer);
+        }
+        buttonContainer.style.display = 'flex';
+        buttonContainer.style.visibility = 'visible';
+        buttonContainer.style.opacity = '1';
+        button.style.visibility = 'visible';
+        button.style.opacity = '1';
+    }, 1000);
+
+    // Update init function to check for video and add button
+    if (window.location.href.includes('/lecture/')) {
+        const checkForVideo = setInterval(() => {
+            const video = document.querySelector('video');
+            if (video && !video.closest('.screenshot-button-container')) {
+                addScreenshotButton(video);
+            }
+        }, 2000);
+    }
 }
 
 // Update init function to add screenshot button when on video lectures

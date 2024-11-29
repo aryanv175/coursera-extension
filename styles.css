@@ -248,41 +248,29 @@
     opacity: 1 !important;
 }
 
-/* Add styles for screenshot functionality */
+/* Update screenshot button styles */
 .screenshot-button-container {
-    opacity: 1 !important;
-    visibility: visible !important;
-    z-index: 2147483646 !important;
     position: absolute !important;
-    pointer-events: auto !important;
-    left: 10px !important;
-    right: auto !important;
+    top: 20px !important;
+    left: 20px !important;
+    z-index: 9999999 !important;
 }
 
 .screenshot-button {
-    opacity: 1 !important;
-    visibility: visible !important;
-    z-index: 2147483646 !important;
-    position: relative !important;
-    pointer-events: auto !important;
-}
-
-.video-container {
-    position: relative !important;
-}
-
-.video-container:hover .screenshot-button-container {
-    opacity: 1;
-}
-
-.screenshot-button {
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    background: rgba(0, 0, 0, 0.75) !important;
+    border: 2px solid white !important;
+    border-radius: 50% !important;
+    width: 44px !important;
+    height: 44px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    padding: 10px !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4) !important;
 }
 
 .screenshot-button:hover {
-    transform: scale(1.1);
+    background: rgba(0, 0, 0, 0.9) !important;
+    transform: scale(1.1) !important;
 } 
