@@ -401,71 +401,73 @@ async function analyzeImageWithGemini(imageBase64) {
 
 // Update the screenshot button creation with higher z-index
 function addScreenshotButton(video) {
-    // First, find the video player container
-    let videoContainer = video.closest('.video-container, .player-container, .rc-VideoMiniPlayer, [data-e2e="video-player"]');    
-    if (!videoContainer) {
-        // If no container found, find the closest parent with position relative/absolute
-        videoContainer = video.closest('div');
-        videoContainer.style.position = 'relative';
-    }
-
-    // Explicitly set container styles
-    videoContainer.style.position = 'relative';
-    videoContainer.style.zIndex = '1'; 
+    // Find the video player container
+    const videoContainer = video.closest('.rc-VideoMiniPlayer') || video.parentElement;
     
-    // Remove any existing screenshot button
-    const existingButton = videoContainer.querySelector('.screenshot-button-container');
-    if (existingButton) {
-        existingButton.remove();
-    }
+    // Create an overlay container for the button
+    const buttonOverlay = document.createElement('div');
+    buttonOverlay.className = 'screenshot-button-overlay';
+    buttonOverlay.style.cssText = `
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        pointer-events: none !important;
+        z-index: 999999999 !important;
+    `;
 
-    const buttonContainer = document.createElement('div');
-    buttonContainer.className = 'screenshot-button-container';
-    buttonContainer.style.cssText = `
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        z-index: 2147483646;
-        opacity: 1 !important;
-        visibility: visible !important;
-        display: block !important;
+    const buttonWrapper = document.createElement('div');
+    buttonWrapper.className = 'screenshot-button-wrapper';
+    buttonWrapper.style.cssText = `
+        position: absolute !important;
+        top: 20px !important;
+        left: 20px !important;
+        pointer-events: auto !important;
+        z-index: 999999999 !important;
     `;
 
     const button = document.createElement('button');
     button.className = 'screenshot-button';
     button.innerHTML = `
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
             <path d="M12 15.2C13.7673 15.2 15.2 13.7673 15.2 12C15.2 10.2327 13.7673 8.8 12 8.8C10.2327 8.8 8.8 10.2327 8.8 12C8.8 13.7673 10.2327 15.2 12 15.2Z" fill="white"/>
             <path d="M9 3L7.17 5H4C2.9 5 2 5.9 2 7V19C2 20.1 2.9 21 4 21H20C21.1 21 22 20.1 22 19V7C22 5.9 21.1 5 20 5H16.83L15 3H9ZM12 17C9.24 17 7 14.76 7 12C7 9.24 9.24 7 12 7C14.76 7 17 9.24 17 12C17 14.76 14.76 17 12 17Z" fill="white"/>
         </svg>
     `;
+
+    // Apply styles directly to the button
     button.style.cssText = `
-        background: rgba(0, 0, 0, 0.7);
-        border: 2px solid rgba(255, 255, 255, 0.8);
-        border-radius: 50%;
-        padding: 8px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        width: 44px;
-        height: 44px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        all: unset !important;
+        position: relative !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 100% !important;
+        height: 100% !important;
+        background: rgba(0, 0, 0, 0.85) !important;
+        border: 2px solid white !important;
+        border-radius: 50% !important;
+        cursor: pointer !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
+        transition: all 0.2s ease !important;
         opacity: 1 !important;
         visibility: visible !important;
+        z-index: 999999999 !important;
     `;
 
-    button.addEventListener('mouseover', () => {
-        button.style.backgroundColor = 'rgba(0, 0, 0, 0.9)';
+    // Add hover effects
+    button.addEventListener('mouseenter', () => {
         button.style.transform = 'scale(1.1)';
+        button.style.background = 'rgba(0, 0, 0, 0.95)';
     });
 
-    button.addEventListener('mouseout', () => {
-        button.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+    button.addEventListener('mouseleave', () => {
         button.style.transform = 'scale(1)';
+        button.style.background = 'rgba(0, 0, 0, 0.85)';
     });
 
+    // Add click handler
     button.addEventListener('click', async () => {
         try {
             video.pause();
@@ -523,30 +525,9 @@ function addScreenshotButton(video) {
         }
     });
 
-    buttonContainer.appendChild(button);
-    videoContainer.appendChild(buttonContainer);
-
-    // Add periodic check to ensure button remains visible
-    const visibilityCheck = setInterval(() => {
-        if (!document.body.contains(buttonContainer)) {
-            videoContainer.appendChild(buttonContainer);
-        }
-        buttonContainer.style.display = 'flex';
-        buttonContainer.style.visibility = 'visible';
-        buttonContainer.style.opacity = '1';
-        button.style.visibility = 'visible';
-        button.style.opacity = '1';
-    }, 1000);
-
-    // Update init function to check for video and add button
-    if (window.location.href.includes('/lecture/')) {
-        const checkForVideo = setInterval(() => {
-            const video = document.querySelector('video');
-            if (video && !video.closest('.screenshot-button-container')) {
-                addScreenshotButton(video);
-            }
-        }, 2000);
-    }
+    buttonWrapper.appendChild(button);
+    buttonOverlay.appendChild(buttonWrapper);
+    videoContainer.appendChild(buttonOverlay);
 }
 
 // Update init function to add screenshot button when on video lectures
@@ -569,6 +550,15 @@ async function init() {
         
         observeUrlChanges();
         
+        // Check for video and add screenshot button
+        if (window.location.href.includes('/lecture/')) {
+            const videoCheck = setInterval(() => {
+                const video = document.querySelector('video');
+                if (video && !document.querySelector('.screenshot-button-wrapper')) {
+                    addScreenshotButton(video);
+                }
+            }, 1000);
+        }
     } catch (error) {
         console.error("Error during initialization:", error);
     }

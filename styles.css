@@ -248,29 +248,57 @@
     opacity: 1 !important;
 }
 
-/* Update screenshot button styles */
-.screenshot-button-container {
+/* Screenshot button styles */
+.screenshot-button-overlay {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    pointer-events: none !important;
+    z-index: 999999999 !important;
+    background: none !important;
+}
+
+.screenshot-button-wrapper {
     position: absolute !important;
     top: 20px !important;
     left: 20px !important;
-    z-index: 9999999 !important;
+    width: 48px !important;
+    height: 48px !important;
+    pointer-events: auto !important;
+    z-index: 999999999 !important;
+    background: none !important;
 }
 
 .screenshot-button {
-    background: rgba(0, 0, 0, 0.75) !important;
-    border: 2px solid white !important;
-    border-radius: 50% !important;
-    width: 44px !important;
-    height: 44px !important;
+    all: unset !important;
+    position: relative !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
+    width: 100% !important;
+    height: 100% !important;
+    background: rgba(0, 0, 0, 0.85) !important;
+    border: 2px solid white !important;
+    border-radius: 50% !important;
     cursor: pointer !important;
-    padding: 10px !important;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.4) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
+    transition: all 0.2s ease !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    z-index: 999999999 !important;
 }
 
 .screenshot-button:hover {
-    background: rgba(0, 0, 0, 0.9) !important;
     transform: scale(1.1) !important;
+    background: rgba(0, 0, 0, 0.95) !important;
+}
+
+/* Ensure video container has proper positioning */
+.rc-VideoMiniPlayer,
+[data-e2e="video-player"],
+.video-container {
+    position: relative !important;
+    overflow: visible !important;
 } 
