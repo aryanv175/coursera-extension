@@ -23,6 +23,9 @@ Coursera Assistant is a Chrome extension that enhances your learning experience 
 - **Visual Learning**: Better comprehension through visual content analysis
 - **24/7 Availability**: Access help whenever you need it
 
+<img width="1145" alt="image" src="https://github.com/user-attachments/assets/63aed9c3-e73f-4fd5-9313-04b5259d1192">
+
+
 ## Technical Implementation
 
 ### API Integration
