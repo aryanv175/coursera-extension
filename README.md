@@ -48,15 +48,13 @@ Coursera Assistant is a Chrome extension that enhances your learning experience 
 
 ### Payment Processing
 - **Integration**: Stripe payment gateway
-- **Flexible Plans**: Monthly and annual subscription options
-- **Secure Transactions**: PCI-compliant payment processing
+- **Flexible Plans**: Monthly subscription options at different price points
 
 ## Future Enhancements
 - AI powered questionnaires
 - Advanced learning analytics
 - Personalized study recommendations
 - Interactive concept visualization
-- Cross-course knowledge integration
 
 ## Installation
 1. Clone the repository
