@@ -216,42 +216,16 @@ function createChatPopup() {
     return popup;
 }
 
-// Update generateResponse function to properly use course content
-async function generateResponse(prompt, courseData) {
+// Update generateResponse function to be more flexible
+async function generateResponse(prompt, courseContext) {
     try {
-        // Handle pleasantries
+        // Allow common pleasantries
         const pleasantries = /^(hi|hey|hello|thanks|thank you|bye|goodbye|ok|okay)$/i;
         if (pleasantries.test(prompt.trim())) {
             return prompt.toLowerCase().includes('thank') ? 
-                "You're welcome! What else would you like to know about the course?" :
-                "Hello! How can I help you with this course?";
+                "You're welcome! Feel free to ask any questions you have." :
+                "Hello! I'm your Coursera Assistant. How can I help you today?";
         }
-
-        // Check for inappropriate content
-        const inappropriatePatterns = [
-            /\b(sex|porn|nude|dating|gambling|drugs|illegal|hack|crack|pirate)\b/i,
-            /(how to cheat|exam answers|test answers|assignment solutions)/i,
-            /(bitcoin|crypto|stock|investment advice|financial advice)/i,
-            /\b(politics|religion|conspiracy|dating advice)\b/i
-        ];
-
-        if (inappropriatePatterns.some(pattern => pattern.test(prompt))) {
-            return "Please keep the questions related to the scope of this course.";
-        }
-
-        // Create a formatted context from all accumulated transcripts
-        const courseContext = Object.entries(courseData.transcripts)
-            .map(([url, data]) => `
-                === ${data.type === 'video' ? 'Video Lecture' : 'Reading Material'}: ${data.title} ===
-                ${data.content}
-            `).join('\n\n');
-
-        console.log("Sending context to Gemini:", {
-            courseTitle: courseData.title,
-            currentLecture: courseData.currentLecture.title,
-            contextLength: courseContext.length,
-            transcriptsCount: Object.keys(courseData.transcripts).length
-        });
 
         const response = await fetch(`${API_URL}?key=${config.GEMINI_API_KEY}`, {
             method: 'POST',
@@ -261,18 +235,18 @@ async function generateResponse(prompt, courseData) {
             body: JSON.stringify({
                 contents: [{
                     parts: [{
-                        text: `You are the Coursera Assistant for the course "${courseData.title}".
-                              Current lecture/reading: "${courseData.currentLecture.title}"
+                        text: `You are the Coursera Assistant for the course "${courseContext.title}".
                               
-                              Use this course content to answer the question:
-                              ${courseContext}
+                              Course Content Context:
+                              ${JSON.stringify(courseContext)}
                               
-                              Student's question: ${prompt}
+                              While you have access to course-specific information above, you can also:
+                              1. Answer general questions about learning and education
+                              2. Provide helpful study tips and strategies
+                              3. Explain related concepts that might help understand the course better
+                              4. Engage in casual conversation while maintaining a helpful, educational focus
                               
-                              Remember to:
-                              1. Base your answer on the course content provided above
-                              2. If the answer isn't in the content, say so
-                              3. Keep responses focused and relevant to the course material`
+                              Student's question: ${prompt}`
                     }]
                 }],
                 generationConfig: {
@@ -305,7 +279,7 @@ async function generateResponse(prompt, courseData) {
         }
     } catch (error) {
         console.error('Error details:', error);
-        return `I apologize, but I encountered an error: ${error.message}. Please try again.`;
+        return `I apologize, but I encountered an error. Please try asking your question again.`;
     }
 }
 
