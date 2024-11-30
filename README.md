@@ -63,8 +63,12 @@ Coursera Assistant is a Chrome extension that enhances your learning experience 
 4. Build the extension: `npm run build`
 5. Load in Chrome as unpacked extension
 
-## Support
-For questions or support, please open an issue in the repository or contact our support team.
+## Error Handling
+- Error Handling and debugging methods in place.
+Example. if API calls are unsuccessful:
+<img width="313" alt="image" src="https://github.com/user-attachments/assets/2abd68b2-ac2a-4626-aaf6-ba0c88e1bb7f">
+<img width="458" alt="image" src="https://github.com/user-attachments/assets/e6344b8d-512a-420b-b63c-f37307c0f3d0">
+
 
 ## License
 This project is licensed under the Creative Commons Attribution-NonCommercial 4.0 International License - see the LICENSE file for details.
